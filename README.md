@@ -8,9 +8,7 @@
       <br /><sub>Resampling: from pixels to terrain</sub>
     </td>
     <td align="center" width="50%">
-      <a href="https://github.com/YOUR-USERNAME/mettet-simulator">
-        <img src="https://raw.githubusercontent.com/YOUR-USERNAME/mettet-simulator/main/mettet-simulation.gif" alt="BTS Méthanisation, Station Mettet" width="100%" />
-      </a>
+      <img src="mettet-simulation.gif" alt="BTS Méthanisation, Station Mettet" width="100%" />
       <br /><sub>Mettet biogas plant: 3D simulation</sub>
     </td>
   </tr>
