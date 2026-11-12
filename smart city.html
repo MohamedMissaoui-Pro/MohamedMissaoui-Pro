@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#060912">
+  <title>SMART//CITY — Disaster Management</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #060912;
+      --panel: rgba(7, 12, 25, .96);
+      --line: #1a2747;
+      --text: #c8d8f0;
+      --muted: #7082a6;
+      --dim: #3e5073;
+      --mint: #00ffc8;
+      --blue: #00b8ff;
+      --pink: #ff3e8a;
+      --amber: #f59e0b;
+      --green: #10b981;
+      --mono: "Share Tech Mono", "SFMono-Regular", Consolas, monospace;
+      --display: "Arial Narrow", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #02040a; }
+    body { display: grid; place-items: center; color: var(--text); font-family: var(--mono); }
+    .screen {
+      position: relative;
+      width: 1600px;
+      height: 900px;
+      flex: none;
+      overflow: hidden;
+      background: var(--bg);
+      transform: scale(var(--fit, 1));
+      transform-origin: center center;
+      isolation: isolate;
+    }
+    #graph {
+      position: absolute;
+      inset: 0;
+      width: 1600px;
+      height: 900px;
+      z-index: -1;
+    }
+    .topbar {
+      height: 58px;
+      padding: 0 22px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(5, 8, 17, .94);
+      border-bottom: 1px solid #202c4b;
+      box-shadow: 0 5px 22px rgba(0,0,0,.2);
+      white-space: nowrap;
+    }
+    .logo {
+      margin-right: 9px;
+      color: var(--mint);
+      font: 900 18px var(--display);
+      letter-spacing: .09em;
+      text-shadow: 0 0 16px rgba(0,255,200,.55);
+    }
+    .sep { height: 28px; width: 1px; margin: 0 4px; background: #253253; }
+    .toolbar-btn {
+      height: 31px;
+      padding: 0 11px;
+      border: 1px solid #253253;
+      border-radius: 3px;
+      color: #8191b2;
+      background: rgba(9,14,29,.82);
+      font: 10px var(--mono);
+      letter-spacing: .08em;
+    }
+    .toolbar-btn.active { color: var(--mint); border-color: #00a989; background: rgba(0,255,200,.08); }
+    .toolbar-btn.supply { color: var(--blue); border-color: #0875a5; background: rgba(0,184,255,.08); }
+    .toolbar-btn.roads { color: var(--amber); border-color: #865b12; background: rgba(245,158,11,.08); }
+    .toolbar-btn.run { color: var(--mint); border-color: var(--mint); font-weight: 700; }
+    .toolbar-btn.view { color: #c084fc; border-color: #7543a1; }
+    .weather {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      color: #f28cae;
+      font-size: 10px;
+      letter-spacing: .13em;
+    }
+    .weather-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #93c5fd; box-shadow: 0 0 10px #93c5fd;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 50% { opacity: .38; transform: scale(.72); } }
+
+    .hero {
+      position: absolute;
+      left: 66px;
+      top: 84px;
+      width: 1020px;
+      pointer-events: none;
+      text-shadow: 0 3px 20px rgba(0,0,0,.75);
+    }
+    .eyebrow {
+      display: flex; align-items: center; gap: 9px;
+      color: var(--mint); font-size: 10px; letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content:""; width: 20px; height: 1px; background: var(--mint); box-shadow: 0 0 9px var(--mint); }
+    h1 {
+      max-width: 940px;
+      min-height: 58px;
+      margin: 11px 0 7px;
+      color: #eaf5ff;
+      font: 800 36px/1.12 var(--display);
+      letter-spacing: .045em;
+      text-transform: uppercase;
+    }
+    .hero-sub {
+      min-height: 21px;
+      color: #9baccc;
+      font-size: 14px;
+      letter-spacing: .04em;
+    }
+    .hero-sub strong { color: #d9e7ff; font-weight: 400; }
+
+    .network-badge {
+      position: absolute;
+      left: 66px;
+      top: 216px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 11px;
+      border: 1px solid rgba(37,51,82,.82);
+      border-radius: 3px;
+      background: rgba(6,10,21,.75);
+      color: #92a5c9;
+      font-size: 9px;
+      letter-spacing: .1em;
+    }
+    .network-badge b { color: var(--mint); font-weight: 400; }
+    .network-badge span + span { border-left: 1px solid #31405f; padding-left: 10px; }
+
+    .side-panel {
+      position: absolute;
+      top: 58px;
+      right: 0;
+      bottom: 45px;
+      width: 334px;
+      padding: 0;
+      border-left: 1px solid #273354;
+      background: var(--panel);
+      box-shadow: -12px 0 30px rgba(0,0,0,.18);
+    }
+    .panel-head {
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(12,18,34,.9);
+      color: var(--blue);
+      font: 700 13px var(--display);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .live { color: var(--green); font: 9px var(--mono); letter-spacing: .1em; }
+    .live::before { content:""; display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); }
+    .panel-content { padding: 22px 23px 18px; }
+    .panel-kicker { color: #596d94; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; }
+    .phase-title {
+      margin: 11px 0 9px;
+      color: #e6f0ff;
+      font: 700 22px/1.18 var(--display);
+      letter-spacing: .04em;
+    }
+    .phase-title .number { color: var(--mint); }
+    .phase-copy { min-height: 88px; color: #90a1c1; font: 13px/1.65 var(--mono); }
+    .algo {
+      margin: 16px 0 21px;
+      padding: 12px 13px;
+      border: 1px solid #263451;
+      border-left: 2px solid var(--mint);
+      background: rgba(15,23,42,.76);
+    }
+    .algo-label { margin-bottom: 7px; color: #596d94; font-size: 8px; letter-spacing: .15em; }
+    .algo-name { color: var(--mint); font-size: 12px; letter-spacing: .04em; }
+    .panel-rule { height: 1px; margin: 19px 0; background: #202b46; }
+    .metric { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(32,43,70,.7); font-size: 10px; }
+    .metric span:first-child { color: #7284a7; }
+    .metric strong { color: #dce8fa; font-weight: 400; }
+    .metric strong.mint { color: var(--mint); }
+    .metric strong.blue { color: var(--blue); }
+    .metric strong.amber { color: var(--amber); }
+    .side-hint { margin-top: 18px; color: #526586; font-size: 9px; line-height: 1.8; }
+    .side-hint b { color: #8ca1c9; font-weight: 400; }
+
+    .legend {
+      position: absolute; left: 62px; bottom: 67px;
+      min-width: 170px;
+      padding: 11px 13px;
+      border: 1px solid rgba(37,50,79,.86);
+      border-radius: 4px;
+      background: rgba(5,9,20,.91);
+      box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    }
+    .legend-title { margin-bottom: 7px; color: #596d94; font-size: 8px; letter-spacing: .17em; }
+    .legend-row { display:flex; align-items:center; gap:8px; margin:5px 0; color:#8b9bbc; font-size:9px; }
+    .swatch { width: 17px; height: 3px; border-radius: 2px; }
+    .swatch.cap { width: 8px; height: 8px; border-radius: 50%; background:var(--mint); box-shadow:0 0 8px var(--mint); }
+
+    .callout {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 3;
+      width: 540px;
+      padding: 18px 26px;
+      border: 1px solid rgba(0,255,200,.38);
+      border-radius: 4px;
+      background: rgba(5,9,20,.86);
+      box-shadow: 0 12px 55px rgba(0,0,0,.55), 0 0 25px rgba(0,255,200,.08);
+      text-align: center;
+      opacity: 0;
+      transform: translate(-50%,-42%) scale(.97);
+      transition: opacity .35s ease, transform .5s cubic-bezier(.2,.8,.2,1);
+      pointer-events: none;
+    }
+    .callout.show { opacity: 1; transform: translate(-50%,-42%) scale(1); }
+    .callout small { color: var(--mint); font-size: 9px; letter-spacing: .2em; }
+    .callout strong { display:block; margin-top:8px; color:#edf6ff; font:700 22px var(--display); letter-spacing:.07em; }
+    .callout span { display:block; margin-top:8px; color:#8fa2c4; font-size:11px; letter-spacing:.04em; }
+
+    .footer {
+      position: absolute; left:0; right:0; bottom:0; height:45px;
+      display:flex; align-items:center; gap:22px;
+      padding:0 20px;
+      border-top:1px solid #1d2944;
+      background:rgba(6,10,20,.97);
+      color:#66799d;
+      font-size:9px; letter-spacing:.06em;
+    }
+    .status { flex:1; min-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#90a1c1; }
+    .status-dot { color:var(--mint); margin-right:6px; }
+    .stat { white-space:nowrap; color:#566a8d; }
+    .stat b { color:#a0b1cc; font-weight:400; }
+    .timeline {
+      position:absolute; left:0; right:0; bottom:45px; height:3px;
+      background:#1b2946;
+    }
+    .timeline-fill {
+      width:0; height:100%;
+      background:linear-gradient(90deg,var(--mint),var(--blue),var(--amber));
+      box-shadow:0 0 10px rgba(0,255,200,.55);
+    }
+    .controls {
+      display:flex; align-items:center; gap:6px;
+      margin-left:auto;
+    }
+    .control {
+      min-width:57px; height:26px; padding:0 8px;
+      border:1px solid #2a3857; border-radius:3px;
+      background:#0c1425; color:#9aabc8;
+      font:9px var(--mono); letter-spacing:.05em; cursor:pointer;
+    }
+    .control:hover { color:var(--mint); border-color:#00a989; }
+    .control.primary { color:var(--mint); border-color:#087d69; }
+    .fade { animation: intro .8s ease both; }
+    @keyframes intro { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="screen" id="screen" aria-label="Smart City disaster-management project explainer">
+    <canvas id="graph" width="1600" height="900" aria-hidden="true"></canvas>
+
+    <header class="topbar">
+      <div class="logo">SMART//CITY</div><div class="sep"></div>
+      <button class="toolbar-btn">＋ CITY</button>
+      <button class="toolbar-btn">⟶ ROAD</button>
+      <div class="sep"></div>
+      <button class="toolbar-btn active" id="phase1btn">P1 SHELTER</button>
+      <button class="toolbar-btn" id="phase2btn">P2 SUPPLY</button>
+      <button class="toolbar-btn" id="phase3btn">P3 ROADS</button>
+      <div class="sep"></div>
+      <button class="toolbar-btn run">▶ RUN</button>
+      <button class="toolbar-btn">↺ RESET</button>
+      <button class="toolbar-btn">⊙ FIT</button>
+      <button class="toolbar-btn view" id="viewBtn">⬡ 3D VIEW</button>
+      <button class="toolbar-btn">▶ PANEL</button>
+      <div class="weather"><i class="weather-dot"></i><span>LIGHT SNOW</span></div>
+    </header>
+
+    <section class="hero" aria-live="polite">
+      <div class="eyebrow" id="eyebrow">DISASTER RESPONSE SIMULATION</div>
+      <h1 id="headline">A CONNECTED CITY.<br>READY FOR CRISIS.</h1>
+      <div class="hero-sub" id="subtitle">Model the roads. Protect the cities. Restore the network.</div>
+    </section>
+    <div class="network-badge" id="networkBadge">
+      <b>NETWORK STATUS: ACTIVE</b><span>100 CITIES</span><span>10 REGIONS</span><span>186 ROADS</span>
+    </div>
+
+    <aside class="side-panel">
+      <div class="panel-head"><span id="panelHead">System overview</span><span class="live">SIMULATING</span></div>
+      <div class="panel-content">
+        <div class="panel-kicker" id="panelKicker">DISASTER MANAGEMENT</div>
+        <div class="phase-title" id="panelTitle">A city network<br>built to respond.</div>
+        <div class="phase-copy" id="panelCopy">Explore a connected system of cities, capitals, and roads. Test how shelter access, supply routes, and recovery plans respond to disruption.</div>
+        <div class="algo">
+          <div class="algo-label" id="algoLabel">NETWORK MODEL</div>
+          <div class="algo-name" id="algoName">100 cities · 10 capital hubs</div>
+        </div>
+        <div class="metric"><span>City groups</span><strong class="mint">10 regions</strong></div>
+        <div class="metric"><span>Network links</span><strong id="roadsMetric">186 roads</strong></div>
+        <div class="metric"><span>Weather state</span><strong class="blue">SNOW / BLIZZARD</strong></div>
+        <div class="panel-rule"></div>
+        <div class="side-hint" id="panelHint">Interactive controls let you <b>add cities and roads</b>, select a response phase, and run the network analysis.</div>
+      </div>
+    </aside>
+
+    <div class="legend">
+      <div class="legend-title">NETWORK LEGEND</div>
+      <div class="legend-row"><span class="swatch cap"></span> Capital hub</div>
+      <div class="legend-row"><span class="swatch" style="background:#36506f"></span> Operational road</div>
+      <div class="legend-row"><span class="swatch" style="background:#10b981"></span> Shelter / rebuild</div>
+      <div class="legend-row"><span class="swatch" style="background:#00b8ff"></span> Supply route</div>
+      <div class="legend-row"><span class="swatch" style="background:#ef4444"></span> Damaged road</div>
+    </div>
+
+    <div class="callout" id="callout">
+      <small id="calloutKicker">PERSPECTIVE VIEW</small>
+      <strong id="calloutTitle">THE NETWORK, IN 3D</strong>
+      <span id="calloutCopy">Rotate through connected regions and capital hubs.</span>
+    </div>
+
+    <div class="timeline"><div class="timeline-fill" id="timelineFill"></div></div>
+    <footer class="footer">
+      <div class="status"><span class="status-dot">●</span><span id="statusText">Ready — select a phase and run the simulation.</span></div>
+      <div class="stat">CITIES <b>100</b></div>
+      <div class="stat">ROADS <b>186</b></div>
+      <div class="stat">VIEW <b id="viewState">2D</b></div>
+      <div class="controls">
+        <button class="control primary" id="pauseBtn" aria-label="Pause animation">Ⅱ PAUSE</button>
+        <button class="control" id="restartBtn">↺ REPLAY</button>
+        <button class="control" id="fullBtn">⛶ FULL</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const DURATION = 20;
+      const screen = document.getElementById("screen");
+      const canvas = document.getElementById("graph");
+      const ctx = canvas.getContext("2d");
+      const ui = {
+        eyebrow: document.getElementById("eyebrow"),
+        headline: document.getElementById("headline"),
+        subtitle: document.getElementById("subtitle"),
+        panelHead: document.getElementById("panelHead"),
+        panelKicker: document.getElementById("panelKicker"),
+        panelTitle: document.getElementById("panelTitle"),
+        panelCopy: document.getElementById("panelCopy"),
+        algoLabel: document.getElementById("algoLabel"),
+        algoName: document.getElementById("algoName"),
+        panelHint: document.getElementById("panelHint"),
+        status: document.getElementById("statusText"),
+        view: document.getElementById("viewState"),
+        viewBtn: document.getElementById("viewBtn"),
+        badge: document.getElementById("networkBadge"),
+        callout: document.getElementById("callout"),
+        calloutKicker: document.getElementById("calloutKicker"),
+        calloutTitle: document.getElementById("calloutTitle"),
+        calloutCopy: document.getElementById("calloutCopy"),
+        fill: document.getElementById("timelineFill"),
+        buttons: [1,2,3].map(n => document.getElementById("phase"+n+"btn")),
+      };
+
+      const colors = ["#00ffc8","#00b8ff","#ff3e8a","#a855f7","#f59e0b","#34d399","#f97316","#818cf8","#ec4899","#22d3ee"];
+      const groupNames = ["ARCTIC","COASTAL","DESERT","FOREST","HIGHLAND","ISLAND","MARSH","PLATEAU","TUNDRA","VALLEY"];
+      const suffixes = ["VALE","CREST","POINT","FALLS","BAY","PEAK","RIDGE","FORD","GATE"];
+      const nodes = [];
+      const groups = [];
+      const edges = [];
+      for (let g=0; g<10; g++) {
+        const col=g%5, row=Math.floor(g/5);
+        const cx=150+col*224, cy=row===0?327:660;
+        const group=[];
+        for (let c=0; c<10; c++) {
+          const angle=(c-1)*Math.PI*2/9 - Math.PI/2 + g*.13;
+          const r=53+((g*13+c*7)%14);
+          const n={
+            id:g*10+c, group:g, capital:c===0,
+            x:c===0?cx:cx+Math.cos(angle)*r,
+            y:c===0?cy:cy+Math.sin(angle)*r*.68,
+            height:c===0?40+((g*7)%12):18+((g*9+c*5)%16),
+            name:c===0?groupNames[g]+" HQ":groupNames[g].slice(0,3)+"-"+suffixes[c-1],
+            color:colors[g],
+          };
+          nodes.push(n); group.push(n);
+        }
+        groups.push({cx,cy,nodes:group,color:colors[g],name:groupNames[g]});
+        for(let c=1;c<=9;c++) edges.push({u:group[c],v:group[c===9?1:c+1],kind:"ring"});
+        [1,2,4,6,8].forEach(c=>edges.push({u:group[0],v:group[c],kind:"spoke"}));
+        [[1,4],[3,7],[5,9]].forEach(([a,b])=>edges.push({u:group[a],v:group[b],kind:"chord"}));
+      }
+      for(let g=0;g<10;g++) {
+        const next=(g+1)%10;
+        edges.push({u:groups[g].nodes[3],v:groups[next].nodes[6],kind:"bridge"});
+      }
+      edges.push({u:groups[1].nodes[2],v:groups[2].nodes[8],kind:"bridge"});
+      for(let g=0;g<5;g++) edges.push({u:groups[g].nodes[5],v:groups[(g+2)%10].nodes[3],kind:"long"});
+      // One additional link gives this illustration the same 100 / 186 scale as the project view.
+      edges.push({u:groups[4].nodes[1],v:groups[8].nodes[7],kind:"long"});
+
+      const degree=nodes.map(()=>0);
+      edges.forEach(e=>{degree[e.u.id]++;degree[e.v.id]++;});
+      // Greedy cost/coverage selection is used only to illustrate the shelter-cover result.
+      const cover=new Set();
+      const coveredEdges=new Set();
+      while(coveredEdges.size<edges.length) {
+        let best=-1, bestScore=-1;
+        nodes.forEach(n=>{
+          if(cover.has(n.id)) return;
+          let uncovered=0;
+          edges.forEach((e,i)=>{if(!coveredEdges.has(i)&&(e.u.id===n.id||e.v.id===n.id))uncovered++;});
+          const cost=n.capital?28+((n.id*7)%10):6+((n.id*13)%13);
+          const score=uncovered/cost;
+          if(score>bestScore){best=n.id;bestScore=score;}
+        });
+        if(best<0) break;
+        cover.add(best);
+        edges.forEach((e,i)=>{if(e.u.id===best||e.v.id===best)coveredEdges.add(i);});
+      }
+      // Multi-source Prim tree rooted at every capital.
+      const treeEdges=new Set();
+      const visited=new Set(nodes.filter(n=>n.capital).map(n=>n.id));
+      while(visited.size<nodes.length) {
+        let chosen=-1, weight=Infinity;
+        edges.forEach((e,i)=>{
+          const u=visited.has(e.u.id),v=visited.has(e.v.id);
+          if(u===v)return;
+          const w=2+((i*17+e.u.id*3+e.v.id*7)%29);
+          if(w<weight){weight=w;chosen=i;}
+        });
+        if(chosen<0)break;
+        treeEdges.add(chosen);
+        visited.add(edges[chosen].u.id);visited.add(edges[chosen].v.id);
+      }
+      // Simulate road damage, then select low-cost damaged links joining components.
+      const destroyed=new Set(edges.map((_,i)=>i).filter(i=>i%13===2));
+      const parent=nodes.map(n=>n.id);
+      const find=x=>parent[x]===x?x:(parent[x]=find(parent[x]));
+      const union=(a,b)=>{a=find(a);b=find(b);if(a===b)return false;parent[b]=a;return true;};
+      edges.forEach((e,i)=>{if(!destroyed.has(i))union(e.u.id,e.v.id);});
+      const rebuild=new Set();
+      [...destroyed].sort((a,b)=>((a*19)%37)-((b*19)%37)).forEach(i=>{
+        const e=edges[i];if(union(e.u.id,e.v.id))rebuild.add(i);
+      });
+
+      const snow=Array.from({length:138},(_,i)=>({
+        x:(i*137.7+53)%1600,y:(i*79.3+31)%900,r:.5+(i%5)*.27,
+        speed:.32+(i%8)*.1,drift:Math.sin(i*3.1)*.2,phase:i*1.7
+      }));
+      let start=performance.now(), pausedAt=0, paused=false, activeSecond=-1;
+      const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+      const smooth=v=>{v=clamp(v);return v*v*(3-2*v);};
+      const stateAt=t=>{
+        if(t<3.2)return "overview";
+        if(t<7.5)return "threeD";
+        if(t<9.1)return "return";
+        if(t<12.2)return "shelter";
+        if(t<15.4)return "supply";
+        if(t<18.5)return "restore";
+        return "closing";
+      };
+      function setText(id, value) { if(ui[id].innerHTML!==value)ui[id].innerHTML=value; }
+      function updatePanel(state) {
+        const copy={
+          overview:{
+            top:"System overview",kicker:"DISASTER MANAGEMENT",
+            title:"A city network<br>built to respond.",
+            copy:"Explore a connected system of cities, capitals, and roads. Test how shelter access, supply routes, and recovery plans respond to disruption.",
+            label:"NETWORK MODEL",algo:"100 cities · 10 capital hubs",
+            hint:"Interactive controls let you <b>add cities and roads</b>, select a response phase, and run the network analysis.",
+            status:"Ready — explore the 2D city and road network."
+          },
+          threeD:{
+            top:"Perspective view",kicker:"NETWORK INSPECTION",
+            title:"See the network<br>from a new angle.",
+            copy:"The flat city graph tilts into perspective. Capital hubs rise above the ground plane while roads remain visible between regions.",
+            label:"VIEW MODE",algo:"3D perspective · rotating camera",
+            hint:"The view toggle moves between a <b>2D planning map</b> and an elevated perspective view.",
+            status:"3D view — rotating across city groups and road links."
+          },
+          return:{
+            top:"Response phases",kicker:"THREE-STEP WORKFLOW",
+            title:"Plan. Connect.<br>Restore.",
+            copy:"Run the same network through three disaster-response decisions: shelter coverage, supply routing, and road restoration.",
+            label:"SIMULATION",algo:"Three phases · one connected graph",
+            hint:"Choose a phase and press <b>RUN</b> to see its solution on the network.",
+            status:"Returning to 2D — response analysis begins."
+          },
+          shelter:{
+            top:"Phase 1 · Shelter",kicker:"SHELTER COVERAGE",
+            title:'<span class="number">01</span> Protect every<br>road connection.',
+            copy:"A genetic algorithm selects lower-cost shelter cities so every road link has access to a covered endpoint.",
+            label:"OPTIMIZATION",algo:"Weighted vertex cover · genetic algorithm",
+            hint:"Green cities and links show the <b>shelter coverage plan</b>.",
+            status:"Phase 1 — choosing shelter sites to cover the road network."
+          },
+          supply:{
+            top:"Phase 2 · Supply",kicker:"CAPITAL-ROOTED ROUTING",
+            title:'<span class="number">02</span> Connect cities<br>to supply hubs.',
+            copy:"A multi-source minimum spanning tree grows from all capital cities, adding the lowest-cost links to reach connected cities.",
+            label:"OPTIMIZATION",algo:"Multi-source Prim · minimum spanning tree",
+            hint:"Blue arrows show the <b>capital-to-city supply paths</b>.",
+            status:"Phase 2 — building minimum-cost supply routes from the capitals."
+          },
+          restore:{
+            top:"Phase 3 · Restoration",kicker:"POST-DISASTER RECOVERY",
+            title:'<span class="number">03</span> Rebuild the<br>critical roads.',
+            copy:"Road failures split the network into components. Kruskal selects the least-cost damaged links needed to reconnect them.",
+            label:"OPTIMIZATION",algo:"Kruskal · minimum spanning tree",
+            hint:"Red dashed roads are damaged; <b>green links are rebuild targets</b>.",
+            status:"Phase 3 — reconnecting the network with low-cost road repairs."
+          },
+          closing:{
+            top:"Smart City · Disaster Management",kicker:"ONE NETWORK. THREE RESPONSES.",
+            title:"Plan. Connect.<br>Restore.",
+            copy:"Explore the connected city graph, run each response phase, and inspect the network in 2D or 3D.",
+            label:"PROJECT OVERVIEW",algo:"100 cities · 10 regions · 186 roads",
+            hint:"An interactive simulation for <b>planning city-scale disaster response</b>.",
+            status:"Simulation overview — ready for the next run."
+          }
+        }[state];
+        setText("panelHead",copy.top);
+        setText("panelKicker",copy.kicker);
+        setText("panelTitle",copy.title);
+        setText("panelCopy",copy.copy);
+        setText("algoLabel",copy.label);
+        setText("algoName",copy.algo);
+        setText("panelHint",copy.hint);
+        setText("status",copy.status);
+        const phase=state==="shelter"?1:state==="supply"?2:state==="restore"?3:0;
+        ui.buttons.forEach((b,i)=>{
+          b.classList.toggle("active",phase===i+1);
+          b.classList.toggle("supply",phase===2&&i===1);
+          b.classList.toggle("roads",phase===3&&i===2);
+        });
+        ui.view.textContent=state==="threeD"?"3D":"2D";
+        ui.viewBtn.classList.toggle("view",state==="threeD");
+        ui.badge.style.opacity=(state==="threeD"||state==="overview"||state==="closing")?"1":".72";
+      }
+      function updateHero(state) {
+        const map={
+          overview:["DISASTER RESPONSE SIMULATION","A CONNECTED CITY.<br>READY FOR CRISIS.","Model the roads. Protect the cities. Restore the network."],
+          threeD:["PERSPECTIVE VIEW","SEE THE NETWORK<br>IN THREE DIMENSIONS.","10 regions. 100 cities. A road system you can inspect from every angle."],
+          return:["RESPONSE WORKFLOW","BACK TO THE<br>OPERATIONS VIEW.","The same connected map. Three practical disaster-response decisions."],
+          shelter:["PHASE 01 / SHELTER COVERAGE","PROTECT ACCESS<br>ACROSS THE NETWORK.","A genetic algorithm selects lower-cost shelter cities to cover road links."],
+          supply:["PHASE 02 / SUPPLY ROUTING","ROUTE SUPPLIES<br>FROM THE CAPITALS.","Multi-source Prim grows a minimum-cost tree from all capital hubs."],
+          restore:["PHASE 03 / ROAD RESTORATION","RECONNECT THE<br>DAMAGED NETWORK.","Kruskal chooses low-cost rebuild links to join disconnected components."],
+          closing:["SMART CITY · DISASTER MANAGEMENT","PLAN. CONNECT.<br>RESTORE.","A city-scale simulation for testing resilient disaster response."]
+        }[state];
+        setText("eyebrow",map[0]);setText("headline",map[1]);setText("subtitle",map[2]);
+        ui.callout.classList.toggle("show",state==="threeD");
+        if(state==="threeD"){
+          setText("calloutKicker","PERSPECTIVE VIEW");
+          setText("calloutTitle","THE NETWORK, IN 3D");
+          setText("calloutCopy","Rotate through connected regions and capital hubs.");
+        }
+      }
+      function project(x,y,z,tilt,yaw) {
+        const cx=650,cy=490,dx=x-cx,dy=y-cy;
+        const rx=dx*Math.cos(yaw)-dy*Math.sin(yaw)*.24;
+        const ry=dy*Math.cos(yaw)+dx*Math.sin(yaw)*.24;
+        const depth=ry*Math.sin(tilt)+z*Math.cos(tilt);
+        const f=860/Math.max(420,860-depth);
+        return {x:cx+rx*f,y:cy+(ry*Math.cos(tilt)-z*Math.sin(tilt))*f};
+      }
+      function pathProjected(points,tilt,yaw,close=false) {
+        points.forEach((p,i)=>{
+          const q=project(p.x,p.y,p.z||0,tilt,yaw);
+          if(i===0)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y);
+        });
+        if(close)ctx.closePath();
+      }
+      function drawBackground(t) {
+        const grad=ctx.createRadialGradient(690,445,60,690,445,990);
+        grad.addColorStop(0,"#09132b");grad.addColorStop(1,"#050812");
+        ctx.fillStyle=grad;ctx.fillRect(0,0,1600,900);
+        ctx.save();
+        ctx.strokeStyle="rgba(25,43,81,.46)";ctx.lineWidth=1;
+        for(let x=28;x<1260;x+=42){ctx.beginPath();ctx.moveTo(x,58);ctx.lineTo(x,855);ctx.stroke();}
+        for(let y=72;y<855;y+=42){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1260,y);ctx.stroke();}
+        ctx.fillStyle="rgba(52,79,133,.5)";
+        for(let x=28;x<1260;x+=42)for(let y=72;y<855;y+=42){ctx.beginPath();ctx.arc(x,y,1,0,Math.PI*2);ctx.fill();}
+        ctx.restore();
+        ctx.save();
+        snow.forEach((f,i)=>{
+          const sy=(f.y+t*37*f.speed)%890;
+          const sx=(f.x+Math.sin(t*.6+f.phase)*12+f.drift*t*8)%1600;
+          ctx.globalAlpha=.15+(i%4)*.075;ctx.fillStyle="#c7dcff";
+          ctx.beginPath();ctx.arc(sx,sy,f.r,0,Math.PI*2);ctx.fill();
+        });
+        ctx.restore();
+      }
+      function drawGroupAreas(tilt,yaw,t3) {
+        groups.forEach((g,gi)=>{
+          const pts=Array.from({length:40},(_,i)=>{
+            const a=i/40*Math.PI*2;
+            const r=95+Math.sin(a*3+gi)*5;
+            return{x:g.cx+Math.cos(a)*r,y:g.cy+Math.sin(a)*r*.69,z:0};
+          });
+          ctx.beginPath();pathProjected(pts,tilt,yaw,true);
+          ctx.fillStyle=g.color+"0c";ctx.fill();
+          ctx.setLineDash([3,7]);ctx.lineWidth=1.2;ctx.strokeStyle=g.color+"53";ctx.stroke();ctx.setLineDash([]);
+          const label=project(g.cx,g.cy-97,0,tilt,yaw);
+          ctx.save();ctx.fillStyle=g.color;ctx.globalAlpha=.82;
+          ctx.font="10px Consolas, monospace";ctx.textAlign="center";ctx.fillText(g.name,label.x,label.y);ctx.restore();
+        });
+      }
+      function drawEdges(state,tilt,yaw,t) {
+        edges.forEach((e,i)=>{
+          let color="rgba(48,72,112,.66)",width=1,dash=[];
+          const covered=cover.has(e.u.id)||cover.has(e.v.id);
+          const isTree=treeEdges.has(i);
+          const isDamaged=destroyed.has(i);
+          const isRebuild=rebuild.has(i);
+          if(state==="shelter"&&covered){color="#10b981";width=2;}
+          else if(state==="supply"&&isTree){color="#00b8ff";width=2.1;}
+          else if(state==="restore"&&isRebuild){color="#10b981";width=2.8;}
+          else if((state==="restore"||state==="closing")&&isDamaged){color="#ef4444";width=1.7;dash=[5,5];}
+          else if(state==="restore"||state==="closing"){color="rgba(53,70,99,.52)";}
+          const a=project(e.u.x,e.u.y,0,tilt,yaw),b=project(e.v.x,e.v.y,0,tilt,yaw);
+          ctx.save();ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+          ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
+          if(color==="#00b8ff"||color==="#10b981"){ctx.shadowColor=color;ctx.shadowBlur=8;}
+          ctx.stroke();ctx.restore();
+          if(state==="supply"&&isTree) {
+            const dir=(i%2===0)?1:-1;
+            const f=(t*.28+i*.173)%1;
+            const px=a.x+(b.x-a.x)*(dir===1?f:1-f),py=a.y+(b.y-a.y)*(dir===1?f:1-f);
+            ctx.save();ctx.fillStyle="#a4e9ff";ctx.shadowColor="#00b8ff";ctx.shadowBlur=9;
+            ctx.beginPath();ctx.arc(px,py,2.2,0,Math.PI*2);ctx.fill();ctx.restore();
+          }
+        });
+      }
+      function drawNodes(state,tilt,yaw,blend,t) {
+        nodes.forEach(n=>{
+          const h=n.height*blend;
+          const base=project(n.x,n.y,0,tilt,yaw);
+          const top=project(n.x,n.y,h,tilt,yaw);
+          let color=n.color;
+          if(state==="shelter"&&cover.has(n.id))color="#10b981";
+          if(state==="supply"&&treeEdges.size&&visited.has(n.id))color="#00b8ff";
+          if(state==="restore"&&[...rebuild].some(i=>edges[i].u.id===n.id||edges[i].v.id===n.id))color="#10b981";
+          const radius=n.capital?5.4:3.2;
+          ctx.save();
+          if(blend>.09) {
+            const w=n.capital?5.2:3.4;
+            ctx.shadowColor=color;ctx.shadowBlur=n.capital?17:10;
+            ctx.beginPath();ctx.moveTo(base.x-radius*.5,base.y);ctx.lineTo(base.x+radius*.5,base.y);
+            ctx.lineTo(top.x+w,top.y);ctx.lineTo(top.x-w,top.y);ctx.closePath();
+            const grad=ctx.createLinearGradient(base.x,base.y,top.x,top.y);
+            grad.addColorStop(0,color+"33");grad.addColorStop(.7,color+"bf");grad.addColorStop(1,color);
+            ctx.fillStyle=grad;ctx.fill();
+            ctx.beginPath();ctx.ellipse(top.x,top.y,w,.35*w,0,0,Math.PI*2);
+            ctx.fillStyle=n.capital?"#fff":color;ctx.fill();
+          }
+          ctx.shadowColor=color;ctx.shadowBlur=n.capital?15:9;
+          ctx.beginPath();ctx.arc(base.x,base.y,n.capital?radius:Math.max(2.3,radius*(1-blend*.35)),0,Math.PI*2);
+          ctx.fillStyle=color;ctx.fill();
+          if(n.capital) {
+            ctx.beginPath();ctx.arc(blend>.09?top.x:base.x,blend>.09?top.y:base.y,10+Math.sin(t*2+n.id)*1.4,0,Math.PI*2);
+            ctx.strokeStyle=color+"93";ctx.lineWidth=1.1;ctx.stroke();
+            ctx.fillStyle="#eafffb";ctx.font="bold 8px Consolas, monospace";ctx.textAlign="center";
+            ctx.fillText(n.name,blend>.09?top.x:base.x,(blend>.09?top.y:base.y)-14);
+          }
+          ctx.restore();
+        });
+      }
+      function draw(t) {
+        ctx.clearRect(0,0,1600,900);
+        drawBackground(t);
+        const state=stateAt(t);
+        let tilt=0,yaw=0;
+        if(state==="threeD") {
+          const p=clamp((t-3.2)/1.05);
+          const q=clamp((7.5-t)/.86);
+          const blend=Math.min(smooth(p),smooth(q));
+          tilt=.61*blend;
+          yaw=.19*Math.sin((t-3.2)*1.35)*blend;
+        } else if(state==="return") {
+          tilt=.61*(1-smooth((t-7.5)/.8));
+        }
+        const blend=clamp(tilt/.61);
+        drawGroupAreas(tilt,yaw,blend);
+        drawEdges(state,tilt,yaw,t);
+        drawNodes(state,tilt,yaw,blend,t);
+      }
+      function tick(now) {
+        if(!paused) {
+          const elapsed=((now-start)/1000)%DURATION;
+          const state=stateAt(elapsed);
+          const second=Math.floor(elapsed);
+          if(second!==activeSecond) {
+            activeSecond=second;
+            updateHero(state);updatePanel(state);
+          }
+          draw(elapsed);
+          ui.fill.style.width=(elapsed/DURATION*100)+"%";
+        }
+        requestAnimationFrame(tick);
+      }
+      function fit() {
+        const s=Math.min(window.innerWidth/1600,window.innerHeight/900);
+        screen.style.setProperty("--fit",String(s));
+      }
+      window.addEventListener("resize",fit);
+      fit();
+      updateHero("overview");updatePanel("overview");draw(0);
+      requestAnimationFrame(tick);
+
+      document.getElementById("pauseBtn").addEventListener("click",e=>{
+        if(!paused) {
+          paused=true;pausedAt=performance.now();
+          e.currentTarget.textContent="▶ PLAY";
+          e.currentTarget.setAttribute("aria-label","Resume animation");
+        } else {
+          start+=performance.now()-pausedAt;paused=false;
+          e.currentTarget.textContent="Ⅱ PAUSE";
+          e.currentTarget.setAttribute("aria-label","Pause animation");
+        }
+      });
+      document.getElementById("restartBtn").addEventListener("click",()=>{
+        start=performance.now();activeSecond=-1;
+        if(paused){paused=false;document.getElementById("pauseBtn").textContent="Ⅱ PAUSE";}
+      });
+      document.getElementById("fullBtn").addEventListener("click",()=>{
+        if(!document.fullscreenElement)screen.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      });
+    })();
+  </script>
+</body>
+</html>
